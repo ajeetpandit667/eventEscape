@@ -1,21 +1,19 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from './pages/Home';
-import Host from "./pages/Host";
-// import Discover from './pages/Discover';
-// import HostEvent from './pages/Host';
-// Add more pages
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import EventEaseLanding from './pages/Home';
+import DiscoverPage from './pages/Discover';
+import Host from './pages/Host';
+import MyEventsDashboard from './pages/MyEvents';
 
-function App() {
+export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        {/* <Route path="/discover" element={<Discover />} /> */}
+        <Route path="/" element={<EventEaseLanding />} />
+        <Route path="/discover" element={<DiscoverPage />} />
         <Route path="/host" element={<Host />} />
-        {/* More routes */}
+        <Route path="/my-events" element={<MyEventsDashboard />} />
       </Routes>
     </Router>
   );
 }
-
-export default App;

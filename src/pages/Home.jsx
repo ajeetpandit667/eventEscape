@@ -1,13 +1,14 @@
 import React from 'react';
 import { Calendar, Users, Star, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function EventEaseLanding() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-gray-300 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center">
               <Calendar className="h-8 w-8 text-indigo-600 mr-2" />
@@ -15,11 +16,10 @@ export default function EventEaseLanding() {
             </div>
             
             {/* Navigation */}
-            <nav className="hidden md:flex space-x-8">
-              <a href="#" className="text-gray-700 hover:text-gray-900 font-medium">Discover Events</a>
-              <a href="#" className="text-gray-700 hover:text-gray-900 font-medium">Host an Event</a>
-              <a href="#" className="text-gray-700 hover:text-gray-900 font-medium">My Events</a>
-              <a href="#" className="text-gray-700 hover:text-gray-900 font-medium">About</a>
+            <nav className="flex space-x-8">
+              <Link to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-bold">Home</Link>
+              <Link to="/discover" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-bold">Discover</Link>
+              <Link to="/my-events" className="text-blue-600 px-3 py-2 text-sm font-bold">My Events</Link>
             </nav>
             
             {/* Auth buttons */}
@@ -50,9 +50,11 @@ export default function EventEaseLanding() {
                 <button className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700">
                   Browse Events Near Me
                 </button>
-                <button className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50">
-                  Host an Event
-                </button>
+                <Link to="/host">
+                  <button className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50">
+                    Host an Event
+                  </button>
+                </Link>
               </div>
             </div>
             
@@ -343,9 +345,11 @@ export default function EventEaseLanding() {
           <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
             Bring your neighborhood together — plan something amazing and watch your community thrive.
           </p>
+          <Link to="/host">
           <button className="bg-white text-indigo-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
             Host Your First Event
-          </button>
+            </button>
+            </Link>
         </div>
       </section>
 
@@ -416,33 +420,7 @@ export default function EventEaseLanding() {
           </div>
 
           {/* Bottom footer */}
-          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm">
-              © 2023 EventEase. All rights reserved.
-            </p>
-            
-            <div className="flex items-center space-x-4 mt-4 md:mt-0">
-              <div className="flex items-center space-x-2">
-                <button className="p-1 text-gray-400 hover:text-white">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <span className="text-gray-400 text-sm">3 / 6</span>
-                <button className="p-1 text-gray-400 hover:text-white">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="flex space-x-4 text-sm">
-                <a href="#" className="text-gray-400 hover:text-white">Terms</a>
-                <a href="#" className="text-gray-400 hover:text-white">Privacy</a>
-                <a href="#" className="text-gray-400 hover:text-white">Cookies</a>
-              </div>
-            </div>
-          </div>
+         
         </div>
       </footer>
     </div>

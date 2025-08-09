@@ -40,8 +40,8 @@ export default function MapComponent({ location, onLocationChange }) {
       center={location}
       zoom={13}
       scrollWheelZoom={true}
-      style={{ height: '256px', width: '100%' }}
-      className="rounded-lg border border-gray-300 z-0"
+      style={{ height: '100%', width: '100%' }}
+      className="rounded-lg border border-gray-300 z-0 h-full w-full"
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'

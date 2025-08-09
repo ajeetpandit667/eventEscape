@@ -1,7 +1,7 @@
 // SearchBox.jsx
 import React, { useState } from 'react';
 
-export default function SearchBox({ onResult }) {
+export default function SearchBox({ onResult, onSearchQuery }) {
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
 
@@ -18,6 +18,9 @@ export default function SearchBox({ onResult }) {
         const lat = parseFloat(data[0].lat);
         const lon = parseFloat(data[0].lon);
         onResult([lat, lon]);
+        if (onSearchQuery) {
+          onSearchQuery(query);
+        }
         setError('');
       } else {
         setError('Location not found.');
@@ -27,22 +30,26 @@ export default function SearchBox({ onResult }) {
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Search Location
-      </label>
       <div className="flex space-x-2">
         <input
           type="text"
-          placeholder="Enter a place, e.g., India Gate"
+          placeholder="Enter a place, e.g., Delhi, India"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyPress={handleKeyPress}
           className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
           onClick={handleSearch}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
         >
           Search
         </button>
