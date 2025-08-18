@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import customMarker from '../assets/marker-icon.png';
 
 const CustomIcon = L.icon({
-  iconUrl: customMarker,
+  iconUrl: customMarker || L.Icon.Default.prototype.options.iconUrl,
   iconSize: [32, 32],
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
@@ -25,12 +25,16 @@ function LocationMarker({ position, setPosition }) {
   ) : null;
 }
 
-// Component to programmatically move the map view
 function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, map.getZoom(), { animate: true });
-  }, [center]);
+    if (center) {
+      const currentCenter = map.getCenter();
+      if (currentCenter.lat !== center[0] || currentCenter.lng !== center[1]) {
+        map.setView(center, map.getZoom(), { animate: true });
+      }
+    }
+  }, [center, map]);
   return null;
 }
 
@@ -44,7 +48,7 @@ export default function MapComponent({ location, onLocationChange }) {
       className="rounded-lg border border-gray-300 z-0 h-full w-full"
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <ChangeView center={location} />

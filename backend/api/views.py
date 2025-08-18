@@ -1,153 +1,94 @@
-from rest_framework import viewsets, status, filters
+from django.shortcuts import get_object_or_404
+from django.db.models import Avg, F
+from django.utils.timezone import now
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from django.contrib.auth.models import User
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .models import Category, Event, RSVP, EventRating, EventImage, UserProfile
+from rest_framework.views import APIView
+
+from .models import Event, Category, UserProfile, Rating
 from .serializers import (
-    CategorySerializer, EventSerializer, EventDetailSerializer, EventCreateSerializer,
-    RSVPSerializer, EventRatingSerializer, EventImageSerializer, UserProfileSerializer,
-    UserSerializer
+    EventSerializer,
+    EventDetailSerializer,
+    EventCreateSerializer,
+    CategorySerializer,
+    UserProfileSerializer,
 )
 
-@csrf_exempt
-def api_root(request):
-    """API Root - Shows available endpoints"""
-    return JsonResponse({
-        'message': 'EventEscape API is running!',
-        'endpoints': {
-            'events': '/api/events/',
-            'categories': '/api/categories/',
-            'rsvps': '/api/rsvps/',
-            'ratings': '/api/ratings/',
-            'profile': '/api/profile/',
-            'admin': '/admin/',
-        },
-        'status': 'success'
-    })
-
-class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name', 'description']
-
 class EventViewSet(viewsets.ModelViewSet):
-    queryset = Event.objects.all()
+    queryset = Event.objects.all().order_by('-start_date')
     serializer_class = EventSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['title', 'description', 'location']
-    ordering_fields = ['start_date', 'created_at', 'average_rating']
-    ordering = ['-created_at']
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return EventDetailSerializer
-        elif self.action == 'create':
+        elif self.action in ['create', 'update', 'partial_update']:
             return EventCreateSerializer
         return EventSerializer
 
-    def get_queryset(self):
-        queryset = Event.objects.all()
-        # Filter by upcoming events
-        upcoming = self.request.query_params.get('upcoming', None)
-        if upcoming is not None:
-            from django.utils import timezone
-            queryset = queryset.filter(start_date__gte=timezone.now())
-        
-        # Filter by location (radius search)
-        lat = self.request.query_params.get('lat', None)
-        lng = self.request.query_params.get('lng', None)
-        radius = self.request.query_params.get('radius', 10)  # Default 10km
-        
-        if lat and lng:
-            # Simple distance filtering (you might want to use GeoDjango for better performance)
-            from django.db.models import Q
-            lat, lng = float(lat), float(lng)
-            radius = float(radius)
-            # This is a simplified version - consider using PostGIS for production
-            queryset = queryset.filter(
-                latitude__range=(lat - radius/111, lat + radius/111),
-                longitude__range=(lng - radius/111, lng + radius/111)
-            )
-        
-        return queryset
-
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def rsvp(self, request, pk=None):
         event = self.get_object()
-        user = request.user
-        
-        # Check if user already has an RSVP
-        rsvp, created = RSVP.objects.get_or_create(
-            event=event,
-            user=user,
-            defaults={'status': 'confirmed'}
-        )
-        
-        if not created:
-            # Toggle RSVP status
-            rsvp.status = 'cancelled' if rsvp.status == 'confirmed' else 'confirmed'
-            rsvp.save()
-        
-        serializer = RSVPSerializer(rsvp)
-        return Response(serializer.data)
 
-    @action(detail=True, methods=['post'])
+        # Check if event has already ended
+        if event.end_date and event.end_date < now():
+            return Response({"error": "Cannot RSVP to an event that has already ended."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        profile = request.user.profile
+        if event in profile.rsvps.all():
+            profile.rsvps.remove(event)
+            event.rsvp_count = F('rsvp_count') - 1
+            status_msg = "RSVP cancelled."
+        else:
+            if event.capacity and event.rsvp_count >= event.capacity:
+                return Response({"error": "Event is at full capacity."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            profile.rsvps.add(event)
+            event.rsvp_count = F('rsvp_count') + 1
+            status_msg = "RSVP confirmed."
+
+        event.save(update_fields=['rsvp_count'])
+        event.refresh_from_db()
+        return Response({"message": status_msg, "rsvp_count": event.rsvp_count})
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def rate(self, request, pk=None):
         event = self.get_object()
-        user = request.user
-        rating_value = request.data.get('rating')
-        comment = request.data.get('comment', '')
-        
-        if not rating_value:
-            return Response({'error': 'Rating is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Create or update rating
-        rating, created = EventRating.objects.get_or_create(
+        value = request.data.get('rating')
+
+        try:
+            value = int(value)
+        except (TypeError, ValueError):
+            return Response({"error": "Invalid rating value."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not (1 <= value <= 5):
+            return Response({"error": "Rating must be between 1 and 5."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        rating_obj, created = Rating.objects.update_or_create(
             event=event,
-            user=user,
-            defaults={'rating': rating_value, 'comment': comment}
+            user=request.user,
+            defaults={"value": value}
         )
-        
-        if not created:
-            rating.rating = rating_value
-            rating.comment = comment
-            rating.save()
-        
-        # Update event's average rating
-        ratings = event.ratings.all()
-        if ratings:
-            event.average_rating = sum(r.rating for r in ratings) / len(ratings)
-            event.total_ratings = len(ratings)
-            event.save()
-        
-        serializer = EventRatingSerializer(rating)
-        return Response(serializer.data)
 
-class RSVPViewSet(viewsets.ModelViewSet):
-    serializer_class = RSVPSerializer
-    permission_classes = [IsAuthenticated]
+        # Efficient aggregation
+        avg_rating = Rating.objects.filter(event=event).aggregate(avg=Avg('value'))['avg'] or 0
+        event.rating = avg_rating
+        event.save(update_fields=['rating'])
 
-    def get_queryset(self):
-        return RSVP.objects.filter(user=self.request.user)
+        return Response({
+            "message": "Rating submitted." if created else "Rating updated.",
+            "average_rating": avg_rating
+        })
 
-class EventRatingViewSet(viewsets.ModelViewSet):
-    serializer_class = EventRatingSerializer
-    permission_classes = [IsAuthenticated]
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
 
-    def get_queryset(self):
-        return EventRating.objects.filter(user=self.request.user)
 
 class UserProfileViewSet(viewsets.ModelViewSet):
+    queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return UserProfile.objects.filter(user=self.request.user)
-
-    def get_object(self):
-        return UserProfile.objects.get_or_create(user=self.request.user)[0]

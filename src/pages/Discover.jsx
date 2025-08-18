@@ -4,40 +4,71 @@ import { Link } from 'react-router-dom';
 import SearchBox from '../components/SearchBox';
 import MapComponent from '../components/MapComponent';
 
-const EventCard = ({ title, date, location, rsvps, rating, category, price, is_free, coverImage }) => (
-  <div className="bg-white rounded-lg shadow-md p-4 mb-4 hover:shadow-lg transition-shadow">
+const EventCard = ({ title, date, location, rsvps, rating, category, price, is_free, coverImage, coordinates, onShowLocation, isSelected }) => (
+  <div className={`bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden ${
+    isSelected ? 'ring-2 ring-blue-500 shadow-lg' : ''
+  }`}>
     {coverImage ? (
       <img
         src={coverImage.startsWith('http') ? coverImage : `http://127.0.0.1:8000${coverImage}`}
         alt={title}
-        className="h-32 w-full object-cover rounded mb-2"
+        className="h-48 w-full object-cover transition-transform duration-300 hover:scale-105"
       />
     ) : (
-      <div className="h-32 bg-gray-300 rounded mb-2 flex items-center justify-center text-sm text-gray-600">
+      <div className="h-48 bg-gray-300 flex items-center justify-center text-sm text-gray-600">
         No Image
       </div>
     )}
-    <div className="flex justify-between items-start mb-2">
-      <h3 className="text-lg font-semibold mb-1">{title}</h3>
-      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{category}</span>
-    </div>
-    <p className="text-sm text-gray-500 flex items-center gap-1">
-      <CalendarDays className="w-4 h-4" /> {date}
-    </p>
-    <p className="text-sm text-gray-500 flex items-center gap-1">
-      <MapPin className="w-4 h-4" /> {location}
-    </p>
-    <div className="flex justify-between items-center mt-2">
-      <p className="text-sm text-gray-500 flex items-center gap-1">
-        {rsvps} RSVPs <Star className="w-4 h-4 ml-2" /> {rating}
+    <div className="p-4">
+      <div className="flex justify-between items-start mb-3">
+        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">{title}</h3>
+        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex-shrink-0">{category}</span>
+      </div>
+      <p className="text-sm text-gray-500 flex items-center gap-1 mb-2">
+        <CalendarDays className="w-4 h-4 flex-shrink-0" /> 
+        <span className="truncate">{date}</span>
       </p>
-      <span className="text-sm font-semibold">
-        {is_free ? 'Free' : `$${price}`}
-      </span>
+      <p className="text-sm text-gray-500 flex items-center gap-1 mb-3">
+        <MapPin className="w-4 h-4 flex-shrink-0" /> 
+        <span className="truncate">{location}</span>
+      </p>
+      <div className="flex justify-between items-center mb-3">
+        <p className="text-sm text-gray-500 flex items-center gap-1">
+          {rsvps} RSVPs <Star className="w-4 h-4 ml-1" /> {rating}
+        </p>
+        <span className="text-sm font-semibold text-green-600">
+          {is_free ? 'Free' : `$${price}`}
+        </span>
+      </div>
+      <div className="flex gap-2">
+  <button 
+    onClick={() => onShowLocation(coordinates)}
+    className={`flex-1 py-1 px-2 rounded transition-all duration-200 font-medium text-xs flex items-center justify-center gap-1 shadow-sm hover:shadow-md ${
+      isSelected 
+        ? 'bg-blue-700 text-white cursor-default' 
+        : coordinates && coordinates.length === 2
+          ? 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
+          : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+    }`}
+    title={
+      isSelected 
+        ? "Currently viewing this location" 
+        : coordinates && coordinates.length === 2
+          ? "Center map on this event's location"
+          : "Location coordinates not available"
+    }
+    disabled={isSelected || !coordinates || coordinates.length !== 2}
+  >
+    <MapPin className="w-4 h-4" />
+    {isSelected ? 'Viewing' : coordinates && coordinates.length === 2 ? 'Show Location' : 'No Location'}
+  </button>
+
+  <button className="flex-1 bg-black text-white py-1 px-2 rounded text-xs hover:bg-gray-800 active:bg-gray-900 transition-all duration-200 font-medium shadow-sm hover:shadow-md">
+    RSVP
+  </button>
+</div>
+
     </div>
-    <button className="mt-2 w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition-colors">
-      RSVP
-    </button>
   </div>
 );
 
@@ -52,6 +83,9 @@ export default function DiscoverPage() {
   const [priceFilter, setPriceFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [filtersApplied, setFiltersApplied] = useState(false);
+  const [mapTransitioning, setMapTransitioning] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showLocationSuccess, setShowLocationSuccess] = useState(false);
 
   // Fetch categories from API
   useEffect(() => {
@@ -63,7 +97,7 @@ export default function DiscoverPage() {
     })
       .then(response => response.json())
       .then(data => {
-        setCategories(data.results || data);
+      setCategories(data.results || data);
       })
       .catch(error => {
         console.error('Error fetching categories:', error);
@@ -176,6 +210,37 @@ export default function DiscoverPage() {
     fetchEvents();
   };
 
+  // Handle showing event location on map
+  const handleShowLocation = (coordinates, event) => {
+    if (coordinates && coordinates.length === 2) {
+      setMapTransitioning(true);
+      setMapCoordinates(coordinates);
+      setSelectedEvent(event);
+      
+      // Smooth scroll to events section to show the selected event
+      setTimeout(() => {
+        const eventsSection = document.querySelector('.bg-gray-50');
+        if (eventsSection) {
+          eventsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+      
+      // Add a small delay to ensure smooth map transition
+      setTimeout(() => {
+        setMapTransitioning(false);
+        setShowLocationSuccess(true);
+        console.log('Map centered on event location:', coordinates);
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setShowLocationSuccess(false);
+        }, 3000);
+      }, 500);
+    } else {
+      console.warn('Invalid coordinates for event:', coordinates);
+    }
+  };
+
   // Format date for display
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -197,8 +262,20 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Success Notification */}
+      {showLocationSuccess && (
+        <div className="fixed top-24 right-6 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 animate-in slide-in-from-right-5">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="font-medium">Location displayed on map!</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <header className="bg-white border-b p-4 flex items-center justify-between h-20 shadow-sm">
+      <header className="bg-gray-300 border-b p-4 flex items-center justify-between h-20 shadow-sm">
         <h1 className="text-xl font-bold">EventEase</h1>
         <nav className="flex space-x-8">
           <Link to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-bold">Home</Link>
@@ -335,50 +412,60 @@ export default function DiscoverPage() {
       </div>
 
       {/* Main Content */}
-<div className="flex flex-1 h-[calc(100vh-160px)]">
-  {/* Event List */}
-  <aside className="w-1/3 bg-gray-50 p-4 overflow-y-auto flex-shrink-0">
-          <h2 className="text-lg font-semibold mb-4">
-            Events Near You <span className="text-gray-500">({filteredEvents.length} events found)</span>
-          </h2>
-          
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-500 mt-2">Loading events...</p>
-            </div>
-          ) : filteredEvents.length > 0 ? (
-            filteredEvents.map((event, index) => (
-              <EventCard
-                key={event.id || index}
-                title={event.title}
-                date={formatDate(event.start_date)}
-                location={event.location}
-                rsvps={event.rsvp_count || 0}
-                rating={event.average_rating || 0}
-                category={event.category?.name || 'Uncategorized'}
-                price={event.price}
-                is_free={event.is_free}
-                coverImage={event.cover_image}
-              />
-            ))
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No events found</p>
-              <p className="text-sm text-gray-400 mt-1">Try adjusting your filters</p>
+      <div className="flex-1 flex flex-col">
+        {/* Map Section - Fixed Height */}
+        <div className="h-96 bg-gray-200 relative overflow-hidden">
+          {/* Map Transition Loading Indicator */}
+          {mapTransitioning && (
+            <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center z-20">
+              <div className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-3">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="text-blue-600 font-medium">Centering map...</span>
+              </div>
             </div>
           )}
-        </aside>
 
-        {/* Map View */}
-        <main className="flex-1 bg-gray-200 relative overflow-hidden min-w-0">
-          <div className="absolute inset-0 w-full h-full">
+          {/* Location Indicator */}
+          {mapCoordinates && mapCoordinates[0] !== 40.7128 && (
+            <div className="absolute top-4 left-4 bg-white p-3 shadow-lg rounded-lg z-10 max-w-xs">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {selectedEvent ? `Viewing: ${selectedEvent.title}` : 'Map Centered'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Lat: {mapCoordinates[0].toFixed(4)}, Lng: {mapCoordinates[1].toFixed(4)}
+                  </p>
+                  {selectedEvent && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedEvent.location}
+                    </p>
+                  )}
+                </div>
+                <button 
+                  onClick={() => {
+                    setMapCoordinates([40.7128, -74.006]);
+                    setSelectedEvent(null);
+                  }}
+                  className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Reset to default location"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="w-full h-full">
             <MapComponent location={mapCoordinates} onLocationChange={setMapCoordinates} />
           </div>
 
           {/* Map popup card */}
           {filteredEvents.length > 0 && (
-            <div className="absolute top-4 right-4 bg-white p-4 shadow-lg rounded-lg w-72">
+            <div className="absolute top-4 right-4 bg-white p-4 shadow-lg rounded-lg w-72 z-10">
               <h3 className="font-semibold text-lg mb-2">{filteredEvents[0].title}</h3>
               <p className="text-sm text-gray-600 mb-2">{filteredEvents[0].location}</p>
               <p className="text-sm text-gray-500 mb-3">{formatDate(filteredEvents[0].start_date)}</p>
@@ -392,7 +479,48 @@ export default function DiscoverPage() {
               </div>
             </div>
           )}
-        </main>
+        </div>
+
+        {/* Events Section - Below Map */}
+        <div className="bg-gray-50 p-6">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6">
+              Events Near You <span className="text-gray-500 text-lg">({filteredEvents.length} events found)</span>
+            </h2>
+            
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-500 mt-4 text-lg">Loading events...</p>
+              </div>
+            ) : filteredEvents.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-6">
+                {filteredEvents.map((event, index) => (
+                  <EventCard
+                    key={event.id || index}
+                    title={event.title}
+                    date={formatDate(event.start_date)}
+                    location={event.location}
+                    rsvps={event.rsvp_count || 0}
+                    rating={event.average_rating || 0}
+                    category={event.category?.name || 'Uncategorized'}
+                    price={event.price}
+                    is_free={event.is_free}
+                    coverImage={event.cover_image}
+                    coordinates={event.coordinates}
+                    onShowLocation={(coords) => handleShowLocation(coords, event)}
+                    isSelected={selectedEvent?.id === event.id}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">No events found</p>
+                <p className="text-sm text-gray-400 mt-2">Try adjusting your filters</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Footer */}

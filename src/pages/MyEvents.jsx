@@ -243,7 +243,7 @@ export default function MyEventsDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b p-4 flex items-center justify-between h-20 shadow-sm">
+      <header className="bg-gray-300 border-b p-4 flex items-center justify-between h-20 shadow-sm">
         <h1 className="text-xl font-bold">EventEase</h1>
         <nav className="flex space-x-8">
           <Link to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-bold">Home</Link>

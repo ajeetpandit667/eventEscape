@@ -1,78 +1,95 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
-from .models import Category, Event, RSVP, EventRating, EventImage, UserProfile
+from .models import Category, Event, RSVP, EventRating, UserProfile
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
-
+# ---------------------------
+# Category
+# ---------------------------
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
 
-class EventImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EventImage
-        fields = '__all__'
 
-class EventRatingSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = EventRating
-        fields = '__all__'
-
-class RSVPSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = RSVP
-        fields = '__all__'
-
+# ---------------------------
+# Event Serializers
+# ---------------------------
 class EventSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
-    host = UserSerializer(read_only=True)
-    rsvp_count = serializers.ReadOnlyField()
-    is_upcoming = serializers.ReadOnlyField()
-    is_ongoing = serializers.ReadOnlyField()
-    
-    class Meta:
-        model = Event
-        fields = '__all__'
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        source='category',
+        write_only=True
+    )
+    rsvp_count = serializers.IntegerField(read_only=True)
+    is_upcoming = serializers.BooleanField(read_only=True)
+    is_ongoing = serializers.BooleanField(read_only=True)
 
-class EventDetailSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
-    host = UserSerializer(read_only=True)
-    rsvps = RSVPSerializer(many=True, read_only=True)
-    ratings = EventRatingSerializer(many=True, read_only=True)
-    images = EventImageSerializer(many=True, read_only=True)
-    rsvp_count = serializers.ReadOnlyField()
-    is_upcoming = serializers.ReadOnlyField()
-    is_ongoing = serializers.ReadOnlyField()
-    
-    class Meta:
-        model = Event
-        fields = '__all__'
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    interests = CategorySerializer(many=True, read_only=True)
-    
-    class Meta:
-        model = UserProfile
-        fields = '__all__'
-
-class EventCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = [
-            'title', 'description', 'category', 'start_date', 'end_date',
-            'location', 'latitude', 'longitude', 'address_line_1', 'address_line_2',
-            'capacity', 'price', 'is_free', 'cover_image'
+            'id', 'title', 'description', 'category', 'category_id',
+            'start_date', 'end_date', 'location', 'latitude', 'longitude',
+            'capacity', 'price', 'is_free', 'image', 'created_by',
+            'rsvp_count', 'is_upcoming', 'is_ongoing'
         ]
-    
-    def create(self, validated_data):
-        validated_data['host'] = self.context['request'].user
-        return super().create(validated_data) 
+
+
+class EventCreateSerializer(serializers.ModelSerializer):
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        source='category'
+    )
+
+    class Meta:
+        model = Event
+        fields = [
+            'title', 'description', 'category_id',
+            'start_date', 'end_date', 'location', 'latitude', 'longitude',
+            'capacity', 'price', 'is_free', 'image'
+        ]
+
+
+class EventDetailSerializer(EventSerializer):
+    ratings = serializers.SerializerMethodField()
+
+    class Meta(EventSerializer.Meta):
+        fields = EventSerializer.Meta.fields + ['ratings']
+
+    def get_ratings(self, obj):
+        ratings = EventRating.objects.filter(event=obj)
+        return EventRatingSerializer(ratings, many=True).data
+
+
+# ---------------------------
+# RSVP
+# ---------------------------
+class RSVPSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = RSVP
+        fields = '__all__'
+        read_only_fields = ('user',)
+
+
+# ---------------------------
+# Ratings
+# ---------------------------
+class EventRatingSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = EventRating
+        fields = '__all__'
+        read_only_fields = ('user',)
+
+
+# ---------------------------
+# User Profile
+# ---------------------------
+class UserProfileSerializer(serializers.ModelSerializer):
+    interests = CategorySerializer(many=True, read_only=False)  # Allow write access
+
+    class Meta:
+        model = UserProfile
+        fields = '__all__'

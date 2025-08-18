@@ -6,7 +6,7 @@ export default function EventEaseLanding() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-gray-300 shadow-sm">
+      <header className="bg-gray-300 border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
@@ -23,11 +23,17 @@ export default function EventEaseLanding() {
             </nav>
             
             {/* Auth buttons */}
-            <div className="flex items-center space-x-4">
-              <button className="text-gray-700 hover:text-gray-900 font-medium">Login</button>
-              <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700">
+          <div className="flex items-center space-x-4">
+            <Link to="/user-login">
+                <button className="text-gray-700 hover:text-gray-900 font-medium">Login</button>
+              </Link>
+              
+            <Link to="/user-SignUp"> 
+                <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700">
                 Sign Up
-              </button>
+                </button>
+              </Link>
+              
             </div>
           </div>
         </div>
