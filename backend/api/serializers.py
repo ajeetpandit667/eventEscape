@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Category, Event, RSVP, EventRating, UserProfile
 
+
 # ---------------------------
 # Category
 # ---------------------------
@@ -88,7 +89,13 @@ class EventRatingSerializer(serializers.ModelSerializer):
 # User Profile
 # ---------------------------
 class UserProfileSerializer(serializers.ModelSerializer):
-    interests = CategorySerializer(many=True, read_only=False)  # Allow write access
+    interests = CategorySerializer(many=True, read_only=True)  # for reading
+    interests_ids = serializers.PrimaryKeyRelatedField(       # for writing
+        queryset=Category.objects.all(),
+        many=True,
+        source="interests",
+        write_only=True
+    )
 
     class Meta:
         model = UserProfile

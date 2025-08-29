@@ -227,31 +227,28 @@ export default function Host() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gray-300 border-b border-gray-200 shadow-sm">
+      {/* Header - Unified Style */}
+      <header className="bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 border-b shadow-md transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <div className="flex items-center">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-semibold text-gray-900">EventEase</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-10 h-10 bg-indigo-600 rounded-lg shadow-md transition-transform duration-300 hover:scale-105">
+                <Calendar className="h-6 w-6 text-white" />
+              </span>
+              <span className="text-2xl font-bold text-gray-900 tracking-tight transition-colors duration-300">EventEase</span>
             </div>
-            
             <nav className="flex space-x-8">
-              <Link to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-bold">Home</Link>
-              <Link to="/discover" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-bold">Discover</Link>
-              <Link to="/my-events" className="text-blue-600 px-3 py-2 text-sm font-bold">My Events</Link>
+              <Link to="/" className="text-gray-600 hover:text-indigo-700 px-3 py-2 text-base font-semibold rounded transition-colors duration-200">Home</Link>
+              <Link to="/discover" className="text-gray-600 hover:text-indigo-700 px-3 py-2 text-base font-semibold rounded transition-colors duration-200">Discover</Link>
+              <Link to="/my-events" className="text-indigo-600 px-3 py-2 text-base font-semibold rounded transition-colors duration-200">My Events</Link>
             </nav>
-    
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">J</span>
-              </div>
-              <span className="text-sm font-medium text-gray-900">John D.</span>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
+            <div className="flex items-center space-x-4">
+              <Link to="/user-login">
+                <button className="text-gray-700 hover:text-indigo-700 font-medium transition-colors duration-200">Login</button>
+              </Link>
+              <Link to="/user-SignUp">
+                <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium shadow hover:bg-indigo-700 transition-all duration-200">Sign Up</button>
+              </Link>
             </div>
           </div>
         </div>

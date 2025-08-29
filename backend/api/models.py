@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.utils import timezone
+
 
 # -----------------------
 # Category Model
@@ -32,21 +32,21 @@ class Event(models.Model):
     created_by = models.ForeignKey(User, related_name='events', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # ✅ Add field to store average rating
+    rating = models.FloatField(default=0)
+
     def clean(self):
-        # Validate that end_date is after start_date
         if self.end_date <= self.start_date:
             raise ValidationError("End date must be after start date.")
 
-        # Check capacity against RSVP count if object already exists
         if self.pk:
             rsvp_count = self.rsvps.count()
             if self.capacity < rsvp_count:
                 raise ValidationError("Capacity cannot be less than current RSVP count.")
 
     def save(self, *args, **kwargs):
-        # Auto-set is_free based on price
         self.is_free = (self.price == 0)
-        self.full_clean()  # Run validations
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -96,6 +96,8 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
 # -----------------------
 # Event Image Model
 # -----------------------

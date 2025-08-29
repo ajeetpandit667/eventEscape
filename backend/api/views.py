@@ -2,19 +2,22 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Avg, F
 from django.utils.timezone import now
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.reverse import reverse
 
-from .models import Event, Category, UserProfile, Rating
+from .models import Event, Category, RSVP, EventRating, UserProfile
 from .serializers import (
     EventSerializer,
     EventDetailSerializer,
     EventCreateSerializer,
     CategorySerializer,
+    RSVPSerializer,
+    EventRatingSerializer,
     UserProfileSerializer,
 )
+
 
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all().order_by('-start_date')
@@ -31,7 +34,6 @@ class EventViewSet(viewsets.ModelViewSet):
     def rsvp(self, request, pk=None):
         event = self.get_object()
 
-        # Check if event has already ended
         if event.end_date and event.end_date < now():
             return Response({"error": "Cannot RSVP to an event that has already ended."},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -68,14 +70,13 @@ class EventViewSet(viewsets.ModelViewSet):
             return Response({"error": "Rating must be between 1 and 5."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        rating_obj, created = Rating.objects.update_or_create(
+        rating_obj, created = EventRating.objects.update_or_create(
             event=event,
             user=request.user,
-            defaults={"value": value}
+            defaults={"rating": value}
         )
 
-        # Efficient aggregation
-        avg_rating = Rating.objects.filter(event=event).aggregate(avg=Avg('value'))['avg'] or 0
+        avg_rating = EventRating.objects.filter(event=event).aggregate(avg=Avg('rating'))['avg'] or 0
         event.rating = avg_rating
         event.save(update_fields=['rating'])
 
@@ -83,6 +84,7 @@ class EventViewSet(viewsets.ModelViewSet):
             "message": "Rating submitted." if created else "Rating updated.",
             "average_rating": avg_rating
         })
+
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -92,3 +94,25 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+
+
+class RSVPViewSet(viewsets.ModelViewSet):
+    queryset = RSVP.objects.all()
+    serializer_class = RSVPSerializer
+
+
+class EventRatingViewSet(viewsets.ModelViewSet):
+    queryset = EventRating.objects.all()
+    serializer_class = EventRatingSerializer
+
+
+# ✅ Add API Root so urls.py works
+@api_view(['GET'])
+def api_root(request, format=None):
+    return Response({
+        'categories': reverse('category-list', request=request, format=format),
+        'events': reverse('event-list', request=request, format=format),
+        'rsvps': reverse('rsvp-list', request=request, format=format),
+        'ratings': reverse('rating-list', request=request, format=format),
+        'profile': reverse('profile-list', request=request, format=format),
+    })

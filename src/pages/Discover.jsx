@@ -261,7 +261,7 @@ export default function DiscoverPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col">
+  <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Success Notification */}
       {showLocationSuccess && (
         <div className="fixed top-24 right-6 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 animate-in slide-in-from-right-5">
@@ -274,29 +274,45 @@ export default function DiscoverPage() {
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-gray-300 border-b p-4 flex items-center justify-between h-20 shadow-sm">
-        <h1 className="text-xl font-bold">EventEase</h1>
-        <nav className="flex space-x-8">
-          <Link to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-bold">Home</Link>
-          <Link to="/discover" className="text-blue-600 px-3 py-2 text-sm font-bold">Discover</Link>
-          <Link to="/my-events" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-bold">My Events</Link>
-        </nav>
-        <div className="w-8 h-8 rounded-full bg-black"></div>
+      {/* Header - Unified Style */}
+      <header className="bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 border-b shadow-md transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-10 h-10 bg-indigo-600 rounded-lg shadow-md transition-transform duration-300 hover:scale-105">
+                <MapPin className="h-6 w-6 text-white" />
+              </span>
+              <span className="text-2xl font-bold text-gray-900 tracking-tight transition-colors duration-300">EventEase</span>
+            </div>
+            <nav className="flex space-x-8">
+              <Link to="/" className="text-gray-600 hover:text-indigo-700 px-3 py-2 text-base font-semibold rounded transition-colors duration-200">Home</Link>
+              <Link to="/discover" className="text-indigo-600 px-3 py-2 text-base font-semibold rounded transition-colors duration-200">Discover</Link>
+              <Link to="/my-events" className="text-gray-600 hover:text-indigo-700 px-3 py-2 text-base font-semibold rounded transition-colors duration-200">My Events</Link>
+            </nav>
+            <div className="flex items-center space-x-4">
+              <Link to="/user-login">
+                <button className="text-gray-700 hover:text-indigo-700 font-medium transition-colors duration-200">Login</button>
+              </Link>
+              <Link to="/user-SignUp">
+                <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium shadow hover:bg-indigo-700 transition-all duration-200">Sign Up</button>
+              </Link>
+            </div>
+          </div>
+        </div>
       </header>
       
       {/* Search and Filters */}
       <div className="bg-gray-50 p-4 border-b">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
-                         {/* Location Search */}
-             <div className="lg:col-span-2">
-               <label className="block text-sm font-medium text-gray-700 mb-1">
-                 <Search className="w-4 h-4 inline mr-1" />
-                 Search Location
-               </label>
-               <SearchBox onResult={handleLocationSearch} onSearchQuery={handleSearchQuery} />
-             </div>
+          <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 items-end" onSubmit={e => {e.preventDefault(); handleApplyFilters();}}>
+            {/* Location Search */}
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Search className="w-4 h-4 inline mr-1" />
+                Search Location
+              </label>
+              <SearchBox onResult={handleLocationSearch} onSearchQuery={handleSearchQuery} />
+            </div>
 
             {/* Category Filter */}
             <div>
@@ -362,26 +378,27 @@ export default function DiscoverPage() {
                 <option value="created_at">Recently Added</option>
               </select>
             </div>
-          </div>
 
-          {/* Filter Actions */}
-          <div className="flex gap-2 mt-4">
-            <button 
-              onClick={handleApplyFilters}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Filter className="w-4 h-4" />
-              Apply Filters
-            </button>
-            {filtersApplied && (
+            {/* Apply Filters Button - Aligned with Search */}
+            <div className="flex gap-2 lg:col-span-1">
               <button 
-                onClick={handleResetFilters}
-                className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition-colors"
+                type="submit"
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors flex items-center gap-2 w-full"
               >
-                Reset
+                <Filter className="w-4 h-4" />
+                Apply Filters
               </button>
-            )}
-          </div>
+              {filtersApplied && (
+                <button 
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition-colors w-full"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </form>
 
           {/* Active Filters Display */}
           {filtersApplied && (
@@ -413,76 +430,97 @@ export default function DiscoverPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Map Section - Fixed Height */}
-        <div className="h-96 bg-gray-200 relative overflow-hidden">
-          {/* Map Transition Loading Indicator */}
-          {mapTransitioning && (
-            <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center z-20">
-              <div className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-3">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <span className="text-blue-600 font-medium">Centering map...</span>
+        {/* Hero Section - Improved Alignment */}
+        <section className="bg-white py-10 shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="flex-1 text-center md:text-left">
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">Discover Events Near You</h1>
+                <p className="text-lg text-gray-600 mb-6">Find, RSVP, and attend amazing events happening in your city. Use the map and filters below to explore!</p>
               </div>
-            </div>
-          )}
-
-          {/* Location Indicator */}
-          {mapCoordinates && mapCoordinates[0] !== 40.7128 && (
-            <div className="absolute top-4 left-4 bg-white p-3 shadow-lg rounded-lg z-10 max-w-xs">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {selectedEvent ? `Viewing: ${selectedEvent.title}` : 'Map Centered'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Lat: {mapCoordinates[0].toFixed(4)}, Lng: {mapCoordinates[1].toFixed(4)}
-                  </p>
-                  {selectedEvent && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {selectedEvent.location}
-                    </p>
-                  )}
+              <div className="flex-1 flex items-center justify-center">
+                <div className="w-64 h-64 bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 rounded-3xl shadow-lg flex items-center justify-center border-4 border-indigo-300">
+                  <MapPin className="w-20 h-20 text-indigo-600" />
                 </div>
-                <button 
-                  onClick={() => {
-                    setMapCoordinates([40.7128, -74.006]);
-                    setSelectedEvent(null);
-                  }}
-                  className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
-                  title="Reset to default location"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </div>
             </div>
-          )}
-
-          <div className="w-full h-full">
-            <MapComponent location={mapCoordinates} onLocationChange={setMapCoordinates} />
           </div>
+        </section>
 
-          {/* Map popup card */}
-          {filteredEvents.length > 0 && (
-            <div className="absolute top-4 right-4 bg-white p-4 shadow-lg rounded-lg w-72 z-10">
-              <h3 className="font-semibold text-lg mb-2">{filteredEvents[0].title}</h3>
-              <p className="text-sm text-gray-600 mb-2">{filteredEvents[0].location}</p>
-              <p className="text-sm text-gray-500 mb-3">{formatDate(filteredEvents[0].start_date)}</p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-semibold">
-                  {filteredEvents[0].is_free ? 'Free' : `$${filteredEvents[0].price}`}
-                </span>
-                <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-                  View Details
-                </button>
+        {/* Map Section - Beautiful Frame */}
+        <div className="flex justify-center items-center py-10">
+          <div className="relative w-full max-w-4xl mx-auto">
+            <div className="rounded-3xl border-4 border-indigo-300 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 shadow-xl overflow-hidden transition-all duration-300" style={{ minHeight: '24rem', maxHeight: '24rem' }}>
+              {/* Map Transition Loading Indicator */}
+              {mapTransitioning && (
+                <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center z-20">
+                  <div className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span className="text-blue-600 font-medium">Centering map...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Location Indicator */}
+              {mapCoordinates && mapCoordinates[0] !== 40.7128 && (
+                <div className="absolute top-4 left-4 bg-white p-3 shadow-lg rounded-lg z-10 max-w-xs">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedEvent ? `Viewing: ${selectedEvent.title}` : 'Map Centered'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Lat: {mapCoordinates[0].toFixed(4)}, Lng: {mapCoordinates[1].toFixed(4)}
+                      </p>
+                      {selectedEvent && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {selectedEvent.location}
+                        </p>
+                      )}
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setMapCoordinates([40.7128, -74.006]);
+                        setSelectedEvent(null);
+                      }}
+                      className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Reset to default location"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="w-full h-full">
+                <MapComponent location={mapCoordinates} onLocationChange={setMapCoordinates} />
               </div>
+
+              {/* Map popup card */}
+              {filteredEvents.length > 0 && (
+                <div className="absolute top-4 right-4 bg-white p-4 shadow-lg rounded-lg w-72 z-10">
+                  <h3 className="font-semibold text-lg mb-2">{filteredEvents[0].title}</h3>
+                  <p className="text-sm text-gray-600 mb-2">{filteredEvents[0].location}</p>
+                  <p className="text-sm text-gray-500 mb-3">{formatDate(filteredEvents[0].start_date)}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold">
+                      {filteredEvents[0].is_free ? 'Free' : `$${filteredEvents[0].price}`}
+                    </span>
+                    <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Events Section - Below Map */}
-        <div className="bg-gray-50 p-6">
+        <div className="bg-gray-50 p-6 flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-2xl font-bold mb-6">
               Events Near You <span className="text-gray-500 text-lg">({filteredEvents.length} events found)</span>
