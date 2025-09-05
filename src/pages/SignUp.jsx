@@ -1,9 +1,13 @@
 import React from "react";
 import { motion } from "framer-motion";
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 export default function SignUp() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white flex flex-col">
+      <Header />
+      <div className="flex items-center justify-center flex-1">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -77,6 +81,8 @@ export default function SignUp() {
           </a>
         </p>
       </motion.div>
+      </div>
+      <Footer />
     </div>
   );
 }

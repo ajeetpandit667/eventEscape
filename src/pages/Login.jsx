@@ -1,10 +1,14 @@
 // src/pages/Login.jsx
 import React from "react";
 import { motion } from "framer-motion";
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 export default function Login() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white flex flex-col">
+      <Header />
+      <div className="flex items-center justify-center flex-1">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -63,6 +67,8 @@ export default function Login() {
           Don’t have an account? <a href="/user-SignUp/" className="text-indigo-600 hover:underline font-medium">Sign up</a>
         </p>
       </motion.div>
+      </div>
+      <Footer />
     </div>
   );
 }

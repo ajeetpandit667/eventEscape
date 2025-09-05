@@ -1,58 +1,43 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import customMarker from '../assets/marker-icon.png';
 
-const CustomIcon = L.icon({
-  iconUrl: customMarker || L.Icon.Default.prototype.options.iconUrl,
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
-});
+import React, { useCallback } from 'react';
+import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 
-function LocationMarker({ position, setPosition }) {
-  useMapEvents({
-    click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
-    }
-  });
-
-  return position ? (
-    <Marker position={position} icon={CustomIcon}>
-      <Popup>Selected Location</Popup>
-    </Marker>
-  ) : null;
-}
-
-function ChangeView({ center }) {
-  const map = useMap();
-  useEffect(() => {
-    if (center) {
-      const currentCenter = map.getCenter();
-      if (currentCenter.lat !== center[0] || currentCenter.lng !== center[1]) {
-        map.setView(center, map.getZoom(), { animate: true });
-      }
-    }
-  }, [center, map]);
-  return null;
-}
+const containerStyle = {
+  width: '100%',
+  height: '100%'
+};
 
 export default function MapComponent({ location, onLocationChange }) {
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY // Use Vite env variable
+  });
+
+  const handleMapClick = useCallback((event) => {
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
+    onLocationChange([lat, lng]);
+  }, [onLocationChange]);
+
+  if (loadError) {
+    return <div>Error loading Google Maps</div>;
+  }
+  if (!isLoaded) {
+    return <div>Loading Map...</div>;
+  }
+
   return (
-    <MapContainer
-      center={location}
+    <GoogleMap
+      mapContainerStyle={containerStyle}
+      center={{ lat: location[0], lng: location[1] }}
       zoom={13}
-      scrollWheelZoom={true}
-      style={{ height: '100%', width: '100%' }}
-      className="rounded-lg border border-gray-300 z-0 h-full w-full"
+      onClick={handleMapClick}
+      options={{
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false
+      }}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <ChangeView center={location} />
-      <LocationMarker position={location} setPosition={onLocationChange} />
-    </MapContainer>
+      <Marker position={{ lat: location[0], lng: location[1] }} />
+    </GoogleMap>
   );
 }

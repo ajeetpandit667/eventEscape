@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, CalendarDays, Star, PlusCircle, Search, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
+// Removed Google Maps to rely purely on Leaflet here
+import { MapContainer, TileLayer, Marker as LeafletMarker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 import SearchBox from '../components/SearchBox';
-import MapComponent from '../components/MapComponent';
+// Removed MapComponent in favor of inline Google Map
 
 const EventCard = ({ title, date, location, rsvps, rating, category, price, is_free, coverImage, coordinates, onShowLocation, isSelected }) => (
   <div className={`bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden ${
@@ -86,6 +92,17 @@ export default function DiscoverPage() {
   const [mapTransitioning, setMapTransitioning] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showLocationSuccess, setShowLocationSuccess] = useState(false);
+  // Leaflet icon setup
+  const leafletIcon = L.icon({
+    iconUrl: '/marker-icon.png',
+    iconRetinaUrl: '/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: undefined,
+    shadowSize: undefined,
+    shadowAnchor: undefined
+  });
 
   // Fetch categories from API
   useEffect(() => {
@@ -274,32 +291,7 @@ export default function DiscoverPage() {
         </div>
       )}
 
-      {/* Header - Unified Style */}
-      <header className="bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 border-b shadow-md transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-10 h-10 bg-indigo-600 rounded-lg shadow-md transition-transform duration-300 hover:scale-105">
-                <MapPin className="h-6 w-6 text-white" />
-              </span>
-              <span className="text-2xl font-bold text-gray-900 tracking-tight transition-colors duration-300">EventEase</span>
-            </div>
-            <nav className="flex space-x-8">
-              <Link to="/" className="text-gray-600 hover:text-indigo-700 px-3 py-2 text-base font-semibold rounded transition-colors duration-200">Home</Link>
-              <Link to="/discover" className="text-indigo-600 px-3 py-2 text-base font-semibold rounded transition-colors duration-200">Discover</Link>
-              <Link to="/my-events" className="text-gray-600 hover:text-indigo-700 px-3 py-2 text-base font-semibold rounded transition-colors duration-200">My Events</Link>
-            </nav>
-            <div className="flex items-center space-x-4">
-              <Link to="/user-login">
-                <button className="text-gray-700 hover:text-indigo-700 font-medium transition-colors duration-200">Login</button>
-              </Link>
-              <Link to="/user-SignUp">
-                <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium shadow hover:bg-indigo-700 transition-all duration-200">Sign Up</button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
       
       {/* Search and Filters */}
       <div className="bg-gray-50 p-4 border-b">
@@ -447,10 +439,10 @@ export default function DiscoverPage() {
           </div>
         </section>
 
-        {/* Map Section - Beautiful Frame */}
-        <div className="flex justify-center items-center py-10">
-          <div className="relative w-full max-w-4xl mx-auto">
-            <div className="rounded-3xl border-4 border-indigo-300 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 shadow-xl overflow-hidden transition-all duration-300" style={{ minHeight: '24rem', maxHeight: '24rem' }}>
+        {/* Map Section - Google Interactive Map */}
+        <div className="py-10">
+          <div className="w-full max-w-4xl mx-auto">
+            <div className="relative overflow-hidden" style={{ height: '24rem' }}>
               {/* Map Transition Loading Indicator */}
               {mapTransitioning && (
                 <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center z-20">
@@ -496,7 +488,42 @@ export default function DiscoverPage() {
               )}
 
               <div className="w-full h-full">
-                <MapComponent location={mapCoordinates} onLocationChange={setMapCoordinates} />
+                <MapContainer
+                  center={[mapCoordinates[0], mapCoordinates[1]]}
+                  zoom={13}
+                  style={{ width: '100%', height: '24rem' }}
+                  scrollWheelZoom
+                  whenCreated={(map) => {
+                    map.on('click', (e) => {
+                      setMapCoordinates([e.latlng.lat, e.latlng.lng]);
+                    });
+                  }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <LeafletMarker position={[mapCoordinates[0], mapCoordinates[1]]} icon={leafletIcon} />
+                  {filteredEvents
+                    .filter(evt => Array.isArray(evt.coordinates) && evt.coordinates.length === 2)
+                    .map((evt, idx) => (
+                      <LeafletMarker
+                        key={evt.id || idx}
+                        position={[evt.coordinates[0], evt.coordinates[1]]}
+                        icon={leafletIcon}
+                        eventHandlers={{
+                          click: () => handleShowLocation(evt.coordinates, evt)
+                        }}
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <div className="font-semibold">{evt.title}</div>
+                            <div className="text-gray-600">{evt.location}</div>
+                          </div>
+                        </Popup>
+                      </LeafletMarker>
+                    ))}
+                </MapContainer>
               </div>
 
               {/* Map popup card */}
@@ -561,14 +588,7 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-white p-4 border-t text-center text-sm text-gray-600">
-        <div className="flex justify-center gap-6 mb-2">
-          <a href="#" className="hover:underline">About Us</a>
-          <a href="#" className="hover:underline">Contact</a>
-          <a href="#" className="hover:underline">Terms</a>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Floating Action Button */}
       <Link to="/host">
